@@ -1,7 +1,7 @@
 #!/bin/bash
 ### Server setup for Debian/Ubuntu based linux
 set -e
-DEFAULT_NAME="client_app"
+DEFAULT_NAME="asiakas_app"
 APP_USER="www-data"
 APP_GROUP="www-data"
 ## $APP_USER:$APP_GROUP
@@ -55,9 +55,10 @@ socket_url=unix:$socket_dir
 ## socket
 echo "Create unix-socket paths:" 
 sudo mkdir -p $run_dir || true && echo "rundir created: $run_dir"
-sudo chown -R $APP_USER:$APP_GROUP $run_dir $socket_dir || true && echo "socket created: $socket_dir"
-sudo cmod -R 
+sudo chown -R $APP_USER:$APP_GROUP $run_dir || true && echo "socket created: $socket_dir"
+
 ## app path
+
 
 # Python Venv
 echo "Python enviroment:"
@@ -75,7 +76,7 @@ app = Flask(__name__)
 @app.route('/')
 def hello_world():
     return 'Hello, World! I am application: $app_name'
-    
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)
 EOF
