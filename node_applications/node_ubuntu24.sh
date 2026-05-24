@@ -1,5 +1,9 @@
 #!/bin/bash
 
+## Node service installation and reverse proxy setup.
+### LIMITS
+### Ubuntu-version: MongoDB has binaries only for 24.04 LTS, latest 26 version is not yet supported
+
 set -e
 
 APP_ROOT_DIR="/opt/node_apps"
@@ -23,8 +27,8 @@ update_dependencies() {
     # -----------------------------
     # MariaDB
     # -----------------------------
-    echo "Installing MariaDB..."
-    sudo apt install -y mariadb-server mariadb-client
+    echo "Installing Mysql..."
+    sudo apt install -y mysql-server mysql-client
     enable_service mariadb 
 
     # -----------------------------
@@ -37,15 +41,17 @@ update_dependencies() {
     # -----------------------------
     # MongoDB
     # https://www.mongodb.com/docs/v8.0/tutorial/install-mongodb-on-ubuntu/
+    # FOR UBUNTU 24.04 LTS. for other systems, reference manual link ^^
     # -----------------------------
     echo "Installing MongoDB..."
     curl -fsSL https://pgp.mongodb.com/server-8.0.asc | \
     sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg \
     --dearmor
 
-  echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ]\
-   https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" |\
+    echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ]\
+    https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" |\
     sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
+    ### SYSTEM DEPENDENT CODE ENDED ###
 
     sudo apt-get update
     sudo apt install -y mongodb-org
@@ -146,11 +152,14 @@ app_creation() {
     # -----------------------------
     # systemd service
     # -----------------------------
+    APP_LOGS="/var/log/$APP_NAME.log"
+    APP_ERR="/var/log/$APP_NAME.log"
     echo "Creating systemd service..."
-    sudo tee /etc/systemd/system/$APP_NAME.service > /dev/null <<EOF
+    APP_SERVICE_DIR="/etc/systemd/system/$APP_NAME.service"
+    sudo tee $APP_SERVICE_DIR > /dev/null <<EOF
 [Unit]
 Description=Node.js App
-After=network.target mysql.servive mongod.service
+After=network.target mysql.service mongod.service
 
 [Service]
 Type=simple
@@ -160,6 +169,9 @@ WorkingDirectory=$APP_DIR/backend
 ExecStart=/usr/bin/npm run start
 Restart=always
 Environment=NODE_ENV=production
+
+StandardOutput=append:$APP_LOGS
+StandardError=append:$APP_ERR
 
 [Install]
 WantedBy=multi-user.target
@@ -255,6 +267,11 @@ App Directory: $APP_DIR
 App Port: $APP_PORT
 App URL: $APP_URL
 Nginx settings: $nxing_proxy_page 
+
+Systemd Service:
+App seervice congig: $APP_SERVICE_DIR
+App logs (stdout): $APP_LOGS
+App errllogs (stderr):$APP_ERR
 
 User running app: $APP_USER
 Group: $APP_GROUP
